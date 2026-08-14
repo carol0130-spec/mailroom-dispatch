@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>郵務分派站 · 每日待辦代理（示意版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Big+Shoulders+Text:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-navy:#141a22;
+    --navy-panel:#1c2530;
+    --navy-panel-2:#212b38;
+    --paper:#f0e9d8;
+    --paper-dark:#e3d9c0;
+    --stamp-red:#c1442e;
+    --stamp-rust:#a3592e;
+    --stamp-amber:#c98a3e;
+    --stamp-sage:#6f8a67;
+    --stamp-steel:#5b7b93;
+    --line: rgba(240,233,216,0.14);
+    --line-strong: rgba(240,233,216,0.28);
+    --ink-text:#ede6d6;
+    --ink-text-dim:#a9a08c;
+    --paper-text:#2a251c;
+    --paper-text-dim:#665f4e;
+    --radius-card: 4px;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:17px;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(201,138,62,0.08), transparent 60%),
+      var(--ink-navy);
+    color:var(--ink-text);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.6;
+    min-height:100vh;
+    font-size:16px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+  .wrap{max-width:1220px; margin:0 auto; padding:0 24px 90px;}
+
+  /* ---------- Header / dispatch desk ---------- */
+  .desk{
+    padding:44px 24px 34px;
+    border-bottom:1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%);
+  }
+  .desk-inner{max-width:1220px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--stamp-amber);
+    margin:0 0 14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:18px; height:1px; background:var(--stamp-amber);}
+  .desk h1{
+    font-family:'Special Elite', monospace;
+    font-weight:400;
+    font-size:clamp(30px, 4.4vw, 47px);
+    margin:0 0 8px;
+    letter-spacing:0.01em;
+  }
+  .desk .sub{color:var(--ink-text-dim); font-size:17px; margin:0;}
+  .desk .sub b{color:var(--stamp-amber); font-weight:600;}
+  .connect-btn{
+    background:var(--stamp-red);
+    color:#fbf3e4;
+    border:1px solid rgba(0,0,0,0.2);
+    padding:15px 24px;
+    font-family:'Big Shoulders Text', sans-serif;
+    font-weight:800;
+    font-size:16.5px;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    border-radius:3px;
+    cursor:pointer;
+    box-shadow:0 2px 0 rgba(0,0,0,0.35);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .connect-btn:hover{transform:translateY(-1px); box-shadow:0 3px 0 rgba(0,0,0,0.35);}
+  .connect-btn:active{transform:translateY(1px); box-shadow:0 1px 0 rgba(0,0,0,0.35);}
+  .connect-btn:focus-visible{outline:2px solid var(--stamp-amber); outline-offset:3px;}
+  .connect-btn[data-state="connected"]{
+    background:var(--navy-panel-2);
+    color:var(--stamp-sage);
+    border:1px solid var(--stamp-sage);
+    box-shadow:none;
+  }
+
+  /* ---------- Section headers ---------- */
+  .section{margin-top:60px;}
+  .section-head{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:24px; flex-wrap:wrap;}
+  .section-head h2{
+    font-family:'Big Shoulders Text', sans-serif;
+    font-weight:800;
+    font-size:25px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    margin:0;
+  }
+  .section-head .desc{color:var(--ink-text-dim); font-size:15.5px; margin-top:5px;}
+  .rule-toggle{
+    background:none; border:1px solid var(--line-strong); color:var(--ink-text-dim);
+    font-family:'IBM Plex Mono', monospace; font-size:14px; padding:9px 14px; border-radius:20px; cursor:pointer;
+  }
+  .rule-toggle:hover{color:var(--ink-text); border-color:var(--ink-text-dim);}
+  .rule-panel{
+    display:none;
+    background:var(--navy-panel);
+    border:1px solid var(--line);
+    border-left:3px solid var(--stamp-amber);
+    padding:18px 22px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    color:var(--ink-text-dim);
+    line-height:1.95;
+    margin-bottom:26px;
+    border-radius:2px;
+  }
+  .rule-panel.open{display:block;}
+  .rule-panel b{color:var(--ink-text);}
+
+  /* ---------- Empty state (pre-connect) ---------- */
+  .empty-state{
+    border:1px dashed var(--line-strong);
+    border-radius:6px;
+    padding:60px 24px;
+    text-align:center;
+    color:var(--ink-text-dim);
+  }
+  .empty-state .glyph{font-family:'Special Elite',monospace; font-size:38px; color:var(--line-strong); margin-bottom:14px;}
+  .empty-state p{margin:6px 0 0; font-size:16px;}
+
+  /* ---------- Loading (sync) ---------- */
+  .sync-row{display:none; align-items:center; gap:12px; color:var(--ink-text-dim); font-family:'IBM Plex Mono',monospace; font-size:15px; padding:22px 0;}
+  .sync-row.active{display:flex;}
+  .sync-dots span{display:inline-block; width:7px; height:7px; margin-right:4px; background:var(--stamp-amber); border-radius:50%; animation:pulse 1.1s infinite ease-in-out;}
+  .sync-dots span:nth-child(2){animation-delay:0.15s;}
+  .sync-dots span:nth-child(3){animation-delay:0.3s;}
+  @keyframes pulse{0%,80%,100%{opacity:0.25;} 40%{opacity:1;}}
+
+  /* ---------- Bins ---------- */
+  .bins{display:none; grid-template-columns:repeat(3, 1fr); gap:20px;}
+  .bins.active{display:grid;}
+  @media (max-width:920px){.bins.active{grid-template-columns:1fr;}}
+  .bin{background:var(--navy-panel); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .bin-head{padding:15px 17px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line);}
+  .bin-head .label{font-family:'Big Shoulders Text',sans-serif; font-weight:800; font-size:16.5px; letter-spacing:0.03em; text-transform:uppercase;}
+  .bin-head .count{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-text-dim);}
+  .bin[data-level="urgent"] .bin-head{border-top:3px solid var(--stamp-red);}
+  .bin[data-level="semi"] .bin-head{border-top:3px solid var(--stamp-rust);}
+  .bin[data-level="later"] .bin-head{border-top:3px solid var(--stamp-sage);}
+  .bin-body{padding:13px; display:flex; flex-direction:column; gap:11px; max-height:600px; overflow-y:auto;}
+
+  .mail-card{
+    background:var(--paper);
+    color:var(--paper-text);
+    border-radius:var(--radius-card);
+    padding:15px 16px 14px;
+    position:relative;
+    box-shadow:0 2px 5px rgba(0,0,0,0.25);
+  }
+  .mail-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px;}
+  .mail-card .sender{font-weight:600; font-size:15.5px;}
+  .mail-card .subject{font-size:15.5px; font-weight:500; margin:0 0 5px; padding-right:58px;}
+  .mail-card .snippet{font-size:14px; color:var(--paper-text-dim); margin:0 0 11px;}
+  .postmark{
+    position:absolute; top:11px; right:11px;
+    width:50px; height:50px; border-radius:50%;
+    border:1.5px solid currentColor;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Special Elite', monospace; font-size:9.5px;
+    text-align:center; line-height:1.2;
+    opacity:0.85;
+    transform:rotate(-8deg);
+  }
+  .bin[data-level="urgent"] .postmark{color:var(--stamp-red);}
+  .bin[data-level="semi"] .postmark{color:var(--stamp-rust);}
+  .bin[data-level="later"] .postmark{color:var(--stamp-sage);}
+  .add-btn{
+    border:1px solid var(--paper-text-dim); background:transparent; color:var(--paper-text);
+    font-size:13.5px; padding:6px 12px; border-radius:14px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  }
+  .add-btn:hover{background:var(--paper-text); color:var(--paper);}
+  .add-btn[disabled]{opacity:0.45; cursor:default; background:transparent; color:var(--paper-text-dim);}
+  .bin-more{
+    background:none; border:1px dashed var(--line-strong); color:var(--ink-text-dim);
+    padding:11px; border-radius:4px; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:13.5px; text-align:center;
+  }
+  .bin-more:hover{color:var(--ink-text); border-color:var(--ink-text-dim);}
+
+  /* ---------- Official documents strip ---------- */
+  .gongwen{
+    margin-top:20px;
+    background:var(--navy-panel);
+    border:1px solid var(--line);
+    border-top:3px solid var(--stamp-steel);
+    border-radius:6px;
+    padding:22px 24px;
+  }
+  .gongwen-head{display:flex; align-items:center; gap:12px; margin-bottom:6px;}
+  .gongwen-seal{
+    width:38px; height:38px; border:2px solid var(--stamp-steel); color:var(--stamp-steel);
+    display:flex; align-items:center; justify-content:center; font-family:'Special Elite',monospace; font-size:11px; flex:0 0 auto;
+    transform:rotate(-4deg);
+  }
+  .gongwen-head .label{font-family:'Big Shoulders Text',sans-serif; font-weight:800; font-size:16.5px; text-transform:uppercase; letter-spacing:0.03em;}
+  .gongwen p.note{color:var(--ink-text-dim); font-size:14.5px; margin:8px 0 0; line-height:1.85;}
+
+  /* ---------- Weekly / Monthly shared: tabs, tickets ---------- */
+  .day-tabs{display:flex; gap:7px; overflow-x:auto; padding-bottom:5px; margin-bottom:22px;}
+  .day-tab{
+    flex:0 0 auto;
+    background:var(--navy-panel); border:1px solid var(--line); color:var(--ink-text-dim);
+    padding:11px 17px; border-radius:20px; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:14px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  .day-tab b{font-family:'Big Shoulders Text',sans-serif; font-size:16px; color:var(--ink-text); font-weight:700;}
+  .day-tab.active{border-color:var(--stamp-amber); background:var(--navy-panel-2);}
+  .day-tab.active b{color:var(--stamp-amber);}
+  .day-tab.today b::after{content:' ・今天'; font-size:11px; color:var(--stamp-sage);}
+  .day-tab:focus-visible{outline:2px solid var(--stamp-amber); outline-offset:2px;}
+  .day-tab .badge{background:var(--stamp-red); color:#fbf3e4; font-size:11px; border-radius:8px; padding:0 6px; display:none;}
+  .day-tab .badge.show{display:inline-block;}
+
+  .ticket-list{display:flex; flex-direction:column; gap:11px; margin-bottom:18px;}
+  .ticket{
+    background:var(--paper); color:var(--paper-text); border-radius:3px;
+    display:flex; align-items:flex-start; gap:13px; padding:15px 16px;
+    position:relative;
+    box-shadow:0 2px 4px rgba(0,0,0,0.22);
+  }
+  .ticket::before{
+    content:'';
+    position:absolute; left:-1px; top:0; bottom:0; width:10px;
+    background-image: radial-gradient(circle at 0 6px, transparent 3.2px, var(--ink-navy) 3.3px);
+    background-size:10px 12px;
+    background-repeat:repeat-y;
+  }
+  .ticket-check{
+    margin-top:2px; width:21px; height:21px; flex:0 0 21px;
+    border:1.5px solid var(--paper-text-dim); border-radius:3px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; background:transparent; font-size:13px;
+  }
+  .ticket-check.checked{background:var(--stamp-sage); border-color:var(--stamp-sage); color:#fbf3e4;}
+  .ticket-check:focus-visible{outline:2px solid var(--stamp-amber); outline-offset:2px;}
+  .ticket-main{flex:1; min-width:0;}
+  .ticket-text{font-size:16px; font-weight:500;}
+  .ticket.done .ticket-text{text-decoration:line-through; color:var(--paper-text-dim);}
+  .ticket-meta{display:flex; align-items:center; gap:9px; margin-top:5px; flex-wrap:wrap;}
+  .ticket-tag{font-family:'IBM Plex Mono',monospace; font-size:12px; padding:2px 8px; border-radius:9px; border:1px solid currentColor;}
+  .ticket-tag.urgent{color:var(--stamp-red);}
+  .ticket-tag.semi{color:var(--stamp-rust);}
+  .ticket-tag.later{color:var(--stamp-sage);}
+  .ticket-tag.official{color:var(--stamp-steel);}
+  .ticket-tag.plain{color:var(--paper-text-dim);}
+  .note-toggle{font-size:13px; color:var(--paper-text-dim); background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; font-family:'IBM Plex Sans',sans-serif;}
+  .note-field{
+    display:none; width:100%; margin-top:9px; border:1px solid var(--paper-dark); background:#f7f2e5;
+    border-radius:3px; padding:9px 11px; font-size:14px; font-family:'IBM Plex Sans',sans-serif; color:var(--paper-text); resize:vertical; min-height:48px;
+  }
+  .note-field.open{display:block;}
+  .ticket-del{background:none; border:none; color:var(--paper-text-dim); cursor:pointer; font-size:19px; line-height:1; padding:2px 4px; flex:0 0 auto;}
+  .ticket-del:hover{color:var(--stamp-red);}
+
+  .add-task-row{display:flex; gap:9px;}
+  .add-task-row input{
+    flex:1; background:var(--navy-panel); border:1px solid var(--line-strong); color:var(--ink-text);
+    padding:13px 15px; border-radius:3px; font-size:15.5px; font-family:'IBM Plex Sans',sans-serif;
+  }
+  .add-task-row input::placeholder{color:var(--ink-text-dim);}
+  .add-task-row input:focus-visible, .add-task-row input:focus{outline:2px solid var(--stamp-amber); outline-offset:1px;}
+  .add-task-row button{
+    background:var(--navy-panel-2); border:1px solid var(--line-strong); color:var(--ink-text);
+    padding:0 20px; border-radius:3px; cursor:pointer; font-family:'Big Shoulders Text',sans-serif; font-weight:700; font-size:14.5px; text-transform:uppercase;
+  }
+  .add-task-row button:hover{border-color:var(--stamp-amber); color:var(--stamp-amber);}
+  .day-empty{color:var(--ink-text-dim); font-size:15px; padding:20px 4px; font-style:italic;}
+
+  /* ---------- Monthly calendar grid ---------- */
+  .cal-head-row{display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-bottom:8px;}
+  .cal-head-row span{text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-text-dim);}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-bottom:22px;}
+  .cal-cell{
+    background:var(--navy-panel); border:1px solid var(--line); border-radius:5px; min-height:88px;
+    padding:8px 8px 6px; text-align:left; cursor:pointer; color:var(--ink-text); display:flex; flex-direction:column; gap:5px;
+  }
+  .cal-cell.blank{background:transparent; border:none; cursor:default;}
+  .cal-cell .num{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-text-dim);}
+  .cal-cell.today{border-color:var(--stamp-amber);}
+  .cal-cell.today .num{color:var(--stamp-amber); font-weight:700;}
+  .cal-cell.selected{background:var(--navy-panel-2); border-color:var(--stamp-amber);}
+  .cal-cell:focus-visible{outline:2px solid var(--stamp-amber); outline-offset:2px;}
+  .cal-chip{font-size:11.5px; font-family:'IBM Plex Mono',monospace; padding:1px 6px; border-radius:8px; border:1px solid currentColor; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cal-chip.urgent{color:var(--stamp-red);}
+  .cal-chip.semi{color:var(--stamp-rust);}
+  .cal-chip.later{color:var(--stamp-sage);}
+  .cal-chip.official{color:var(--stamp-steel);}
+  .cal-chip.plain{color:var(--ink-text-dim);}
+  .cal-more{font-size:11px; color:var(--ink-text-dim); font-family:'IBM Plex Mono',monospace;}
+  @media (max-width:760px){
+    .cal-cell{min-height:64px; padding:6px;}
+    .cal-chip{display:none;}
+    .cal-cell .dot-row{display:flex; gap:3px; flex-wrap:wrap;}
+    .cal-dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
+  }
+  .cal-agenda-label{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--ink-text-dim); margin-bottom:12px;}
+  .cal-agenda-label b{color:var(--stamp-amber);}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(10,13,17,0.72); z-index:50;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--paper); color:var(--paper-text); max-width:440px; width:100%;
+    border-radius:6px; padding:28px 28px 24px; box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  .modal h3{font-family:'Special Elite',monospace; font-weight:400; font-size:22px; margin:0 0 13px;}
+  .modal p{font-size:15px; color:var(--paper-text-dim); line-height:1.75; margin:0 0 22px;}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end;}
+  .modal-actions button{padding:11px 18px; border-radius:3px; cursor:pointer; font-size:14.5px; border:1px solid var(--paper-text-dim); background:transparent; color:var(--paper-text);}
+  .modal-actions .primary{background:var(--stamp-red); border-color:var(--stamp-red); color:#fbf3e4; font-weight:600;}
+
+  footer{margin-top:76px; padding-top:26px; border-top:1px solid var(--line); color:var(--ink-text-dim); font-size:14.5px; line-height:1.9;}
+  footer b{color:var(--ink-text);}
+</style>
+</head>
+<body>
+
+<div class="desk">
+  <div class="desk-inner">
+    <div>
+      <p class="eyebrow">Mailroom Dispatch · 郵務分派站</p>
+      <h1 id="deskTitle">今日分派</h1>
+      <p class="sub" id="deskSub">示意版・使用範例信件展示分類邏輯，尚未連接真實信箱</p>
+    </div>
+    <button class="connect-btn" id="connectBtn">接上 Gmail 帳號</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- SECTION 1: SORTING BINS -->
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>分派台 · 依急迫性分類</h2>
+        <p class="desc">同步後，最新信件會依規則自動分進以下信箱</p>
+      </div>
+      <button class="rule-toggle" id="ruleToggle">規則怎麼判斷的？</button>
+    </div>
+    <div class="rule-panel" id="rulePanel">
+      <div><b>緊急</b> — 截止時間就在今天／明天，或寄件者是主管、合作單位且明確要求盡快回覆</div>
+      <div><b>次緊急</b> — 例行但重要的固定任務（如每月固定報告），本身不急，但漏了會有後果</div>
+      <div><b>可以晚點</b> — 電子報、系統通知、行銷信等，無需回覆的一般信件</div>
+      <div><b>公文</b> — 來自公務機關的正式來文，另外獨立列出，不併入上述三類</div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="glyph">✉</div>
+      <p>尚未同步信箱。按右上角「接上 Gmail 帳號」載入 30 封範例信件。</p>
+    </div>
+
+    <div class="sync-row" id="syncRow">
+      <span class="sync-dots"><span></span><span></span><span></span></span>
+      同步中，正在依規則分類 30 封信件…
+    </div>
+
+    <div class="bins" id="bins">
+      <div class="bin" data-level="urgent">
+        <div class="bin-head"><span class="label">緊急</span><span class="count" id="countUrgent">0</span></div>
+        <div class="bin-body" id="binUrgent"></div>
+      </div>
+      <div class="bin" data-level="semi">
+        <div class="bin-head"><span class="label">次緊急</span><span class="count" id="countSemi">0</span></div>
+        <div class="bin-body" id="binSemi"></div>
+      </div>
+      <div class="bin" data-level="later">
+        <div class="bin-head"><span class="label">可以晚點</span><span class="count" id="countLater">0</span></div>
+        <div class="bin-body" id="binLater"></div>
+      </div>
+    </div>
+
+    <div class="gongwen" id="gongwenBox" style="display:none;">
+      <div class="gongwen-head">
+        <div class="gongwen-seal">公文</div>
+        <span class="label">待辦公文</span>
+      </div>
+      <p class="note" id="gongwenNote">目前沒有待辦公文。之後若信箱裡有機關來文，會獨立列在這一欄，附上文號、發文機關與簽核期限，不會和一般信件混在一起。</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: WEEKLY BENCH -->
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2>本週</h2>
+        <p class="desc" id="weekDesc">從信件加入，或自行新增；打勾＝完成，可展開加註記</p>
+      </div>
+    </div>
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="ticket-list" id="ticketList"></div>
+    <div class="add-task-row">
+      <input type="text" id="newTaskInput" placeholder="新增本週待辦事項…按 Enter 加入">
+      <button id="addTaskBtn">加入</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: MONTHLY CALENDAR -->
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <h2 id="monthTitle">本月行事曆</h2>
+        <p class="desc">點選日期可加註待辦；之後可連結真實行事曆自動帶入本月事項</p>
+      </div>
+    </div>
+    <div class="cal-head-row" id="calHeadRow"></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-agenda-label" id="calAgendaLabel"></div>
+    <div class="ticket-list" id="monthTicketList"></div>
+    <div class="add-task-row">
+      <input type="text" id="newMonthTaskInput" placeholder="新增這天的待辦事項…按 Enter 加入">
+      <button id="addMonthTaskBtn">加入</button>
+    </div>
+  </div>
+
+  <footer>
+    這是示意版：分類使用<b>規則式判斷</b>（截止時間＋寄件者身分＋關鍵字），不需要金鑰、不會把信件內容送到任何第三方，適合先發布成公開網頁測試流程與互動方式。<br>
+    之後要接上真實 Gmail 時，需要另外申請一組免費的 Google OAuth Client ID 並串接 Gmail API；本月行事曆也可以在那之後改接真實行事曆（Google Calendar 等），自動帶入本月待辦。
+  </footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>示意版尚未連接信箱</h3>
+    <p>目前這是公開發布的純前端頁面，還沒有串接真實 Gmail 登入（那需要你申請 Google OAuth 金鑰）。先用 30 封範例信件看看分類邏輯跟互動方式，之後再一起接上真實帳號與行事曆。</p>
+    <div class="modal-actions">
+      <button id="modalCancel">取消</button>
+      <button class="primary" id="modalContinue">載入範例信件</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Date helpers ----------
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function toISO(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function startOfWeekMon(d){ var day=d.getDay(); var diff=(day===0?-6:1-day); return addDays(d,diff); }
+  function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+  function fmtMD(d){ return (d.getMonth()+1)+'/'+d.getDate(); }
+
+  var today = new Date();
+  var todayISO = toISO(today);
+  var weekStart = startOfWeekMon(today);
+  var weekISOs = [0,1,2,3,4,5,6].map(function(i){ return toISO(addDays(weekStart,i)); });
+  var weekdayLabels = ['一','二','三','四','五','六','日'];
+  var nextMondayISO = toISO(addDays(weekStart,7));
+  var nextWedISO = toISO(addDays(weekStart,9));
+  var endOfMonthISO = toISO(endOfMonth(today));
+
+  // ---------- Mock mail data ----------
+  var LATER_TEMPLATES = [
+    {sender:"XX 電子報", subject:"本週產業趨勢摘要"},
+    {sender:"System", subject:"密碼將於 30 天後到期"},
+    {sender:"人資公告", subject:"員工旅遊活動報名開放"},
+    {sender:"行銷部", subject:"新產品上市優惠通知"},
+    {sender:"停車場管理", subject:"月租費用調整公告"},
+    {sender:"訂閱電子報", subject:"設計靈感週報"},
+    {sender:"同事", subject:"辦公室植物澆水表更新"},
+    {sender:"廣告", subject:"限時優惠，訂閱方案 85 折"},
+    {sender:"社團", subject:"讀書會下次聚會時間調整"},
+    {sender:"系統通知", subject:"雲端硬碟容量已使用 80%"}
+  ];
+  var LATER_COUNT = 27;
+  var laterMails = [];
+  for(var i=0;i<LATER_COUNT;i++){
+    laterMails.push({
+      sender: LATER_TEMPLATES[i % LATER_TEMPLATES.length].sender,
+      subject: LATER_TEMPLATES[i % LATER_TEMPLATES.length].subject,
+      snippet:"一般信件，不需要立即處理。",
+      level:"later", dueISO:null, stamp:"不急"
+    });
+  }
+
+  var MAILS = [
+    {sender:"陳經理（主管）", subject:"會議資料請於今晚 22:00 前繳交", snippet:"下週三部門會議要用，麻煩今天 22:00 前把資料寄給我。", level:"urgent", dueISO:todayISO, stamp:"今日\\n22:00"},
+    {sender:"A 單位（合作邀約）", subject:"邀請下週一到本單位授課", snippet:"想邀請您於下週一到我們單位進行一場專題演講，請確認是否方便。", level:"urgent", dueISO:nextMondayISO, stamp:"下週一\\n請回覆"},
+    {sender:"院辦公室", subject:"本月院務會議報告請繳交", snippet:"請於月底前繳交本月院務會議書面報告，格式同上月。", level:"semi", dueISO:endOfMonthISO, stamp:"月底前\\n例行"}
+  ].concat(laterMails);
+
+  var LEVEL_LABEL = {urgent:"緊急", semi:"次緊急", later:"晚點", official:"公文", plain:"待辦"};
+
+  // ---------- State ----------
+  var STORE_KEY = "mailroom_dispatch_v2";
+  var state = loadState();
+  state.activeWeekDay = todayISO;
+  state.selectedMonthDate = todayISO;
+  state.laterExpanded = false;
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && parsed.tasks) return parsed;
+      }
+    }catch(e){}
+    return {connected:false, tasks:{}};
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({connected:state.connected, tasks:state.tasks})); }catch(e){}
+  }
+  function cryptoId(){ return 't' + Math.random().toString(36).slice(2,10); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function tasksFor(dateISO){ return state.tasks[dateISO] || []; }
+  function addTask(dateISO, text, level){
+    if(!state.tasks[dateISO]) state.tasks[dateISO] = [];
+    state.tasks[dateISO].push({id:cryptoId(), text:text, level:level||'plain', done:false, note:''});
+    saveState();
+  }
+
+  // ---------- Header text ----------
+  document.getElementById('deskTitle').textContent = '今日分派：' + (today.getMonth()+1) + '月' + today.getDate() + '日';
+
+  // ---------- Connect flow ----------
+  var connectBtn = document.getElementById('connectBtn');
+  var modalOverlay = document.getElementById('modalOverlay');
+  var emptyState = document.getElementById('emptyState');
+  var syncRow = document.getElementById('syncRow');
+  var binsEl = document.getElementById('bins');
+  var gongwenBox = document.getElementById('gongwenBox');
+  var deskSub = document.getElementById('deskSub');
+
+  connectBtn.addEventListener('click', function(){
+    if(state.connected) return;
+    modalOverlay.classList.add('open');
+  });
+  document.getElementById('modalCancel').addEventListener('click', function(){ modalOverlay.classList.remove('open'); });
+  modalOverlay.addEventListener('click', function(e){ if(e.target === modalOverlay) modalOverlay.classList.remove('open'); });
+  document.getElementById('modalContinue').addEventListener('click', function(){
+    modalOverlay.classList.remove('open');
+    runSync();
+  });
+
+  function runSync(){
+    emptyState.style.display = 'none';
+    syncRow.classList.add('active');
+    setTimeout(function(){
+      syncRow.classList.remove('active');
+      state.connected = true;
+      connectBtn.textContent = '已同步 · 範例信箱（30）';
+      connectBtn.setAttribute('data-state','connected');
+      deskSub.innerHTML = '已同步 <b>30</b> 封信・<b>2</b> 緊急・<b>1</b> 次緊急・<b>27</b> 可以晚點';
+      binsEl.classList.add('active');
+      gongwenBox.style.display = 'block';
+      renderBins();
+      // agent auto-drafts todos for the urgent + semi-urgent items only
+      if(!state._autoAdded){
+        addTask(todayISO, "繳交會議資料（今晚 22:00 前）", "urgent");
+        addTask(nextMondayISO, "回覆並準備 A 單位授課", "urgent");
+        addTask(endOfMonthISO, "撰寫本月院務會議報告", "semi");
+        state._autoAdded = true;
+      }
+      renderDayTabs(); renderTickets();
+      renderCalendar(); renderMonthAgenda();
+      saveState();
+    }, 900);
+  }
+
+  // ---------- Rule panel ----------
+  document.getElementById('ruleToggle').addEventListener('click', function(){
+    document.getElementById('rulePanel').classList.toggle('open');
+  });
+
+  // ---------- Bins render ----------
+  function renderBins(){
+    var urgent = MAILS.filter(function(m){return m.level==='urgent';});
+    var semi = MAILS.filter(function(m){return m.level==='semi';});
+    var later = MAILS.filter(function(m){return m.level==='later';});
+
+    fillBin('binUrgent', urgent, 'urgent', false);
+    fillBin('binSemi', semi, 'semi', false);
+    fillBin('binLater', later, 'later', true);
+
+    document.getElementById('countUrgent').textContent = urgent.length;
+    document.getElementById('countSemi').textContent = semi.length;
+    document.getElementById('countLater').textContent = later.length;
+  }
+
+  function fillBin(elId, mails, level, allowCollapse){
+    var el = document.getElementById(elId);
+    el.innerHTML = '';
+    var visible = mails;
+    var collapsed = allowCollapse && !state.laterExpanded;
+    if(collapsed) visible = mails.slice(0,5);
+
+    visible.forEach(function(m){
+      el.appendChild(buildMailCard(m, level));
+    });
+
+    if(allowCollapse && mails.length > 5){
+      var more = document.createElement('button');
+      more.className = 'bin-more';
+      more.type = 'button';
+      more.textContent = collapsed ? ('顯示其餘 ' + (mails.length-5) + ' 封（多為電子報／系統通知／行銷信）') : '收合';
+      more.addEventListener('click', function(){
+        state.laterExpanded = !state.laterExpanded;
+        fillBin(elId, mails, level, allowCollapse);
+      });
+      el.appendChild(more);
+    }
+  }
+
+  function buildMailCard(m, level){
+    var card = document.createElement('div');
+    card.className = 'mail-card';
+    var stampHtml = (m.stamp||'').split('\\n').map(escapeHtml).join('<br>');
+    card.innerHTML =
+      '<div class="postmark">' + stampHtml + '</div>' +
+      '<div class="top-row"><span class="sender">' + escapeHtml(m.sender) + '</span></div>' +
+      '<div class="subject">' + escapeHtml(m.subject) + '</div>' +
+      '<div class="snippet">' + escapeHtml(m.snippet) + '</div>' +
+      '<button class="add-btn" type="button">' + (m.dueISO ? '加入待辦' : '加入今天待辦') + '</button>';
+    var btn = card.querySelector('.add-btn');
+    btn.addEventListener('click', function(){
+      var target = m.dueISO || todayISO;
+      addTask(target, m.subject, level);
+      btn.textContent = '已加入 ✓';
+      btn.disabled = true;
+      renderDayTabs(); renderTickets();
+      renderCalendar(); renderMonthAgenda();
+    });
+    return card;
+  }
+
+  // ---------- Weekly bench ----------
+  var dayTabsEl = document.getElementById('dayTabs');
+  var ticketListEl = document.getElementById('ticketList');
+
+  function renderDayTabs(){
+    dayTabsEl.innerHTML = '';
+    weekISOs.forEach(function(iso, idx){
+      var d = addDays(weekStart, idx);
+      var tab = document.createElement('button');
+      var isToday = iso === todayISO;
+      tab.className = 'day-tab' + (iso === state.activeWeekDay ? ' active' : '') + (isToday ? ' today' : '');
+      tab.type = 'button';
+      var openCount = tasksFor(iso).filter(function(t){return !t.done;}).length;
+      tab.innerHTML = '<b>週' + weekdayLabels[idx] + '</b><span>' + fmtMD(d) + '</span>' +
+        '<span class="badge' + (openCount>0?' show':'') + '">' + openCount + '</span>';
+      tab.addEventListener('click', function(){
+        state.activeWeekDay = iso;
+        renderDayTabs();
+        renderTickets();
+      });
+      dayTabsEl.appendChild(tab);
+    });
+  }
+
+  function buildTicketRow(t, dateISO, onChange){
+    var row = document.createElement('div');
+    row.className = 'ticket' + (t.done ? ' done' : '');
+
+    var check = document.createElement('button');
+    check.className = 'ticket-check' + (t.done ? ' checked' : '');
+    check.type = 'button';
+    check.setAttribute('aria-label', t.done ? '標示為未完成' : '標示為完成');
+    check.textContent = t.done ? '✓' : '';
+    check.addEventListener('click', function(){
+      t.done = !t.done;
+      saveState();
+      onChange();
+    });
+
+    var main = document.createElement('div');
+    main.className = 'ticket-main';
+
+    var text = document.createElement('div');
+    text.className = 'ticket-text';
+    text.textContent = t.text;
+
+    var meta = document.createElement('div');
+    meta.className = 'ticket-meta';
+    var tag = document.createElement('span');
+    tag.className = 'ticket-tag ' + t.level;
+    tag.textContent = LEVEL_LABEL[t.level] || '待辦';
+    var noteToggle = document.createElement('button');
+    noteToggle.className = 'note-toggle';
+    noteToggle.type = 'button';
+    noteToggle.textContent = t.note ? '編輯備註' : '加註記';
+    meta.appendChild(tag);
+    meta.appendChild(noteToggle);
+
+    var noteField = document.createElement('textarea');
+    noteField.className = 'note-field' + (t.note ? ' open' : '');
+    noteField.placeholder = '寫下備註，例如進度或需要誰協助…';
+    noteField.value = t.note || '';
+    noteToggle.addEventListener('click', function(){ noteField.classList.toggle('open'); });
+    noteField.addEventListener('input', function(){ t.note = noteField.value; saveState(); });
+
+    main.appendChild(text);
+    main.appendChild(meta);
+    main.appendChild(noteField);
+
+    var del = document.createElement('button');
+    del.className = 'ticket-del';
+    del.type = 'button';
+    del.setAttribute('aria-label','刪除待辦');
+    del.innerHTML = '&times;';
+    del.addEventListener('click', function(){
+      state.tasks[dateISO] = state.tasks[dateISO].filter(function(x){return x.id !== t.id;});
+      saveState();
+      onChange();
+    });
+
+    row.appendChild(check);
+    row.appendChild(main);
+    row.appendChild(del);
+    return row;
+  }
+
+  function renderTickets(){
+    var list = tasksFor(state.activeWeekDay);
+    ticketListEl.innerHTML = '';
+    if(list.length === 0){
+      var empty = document.createElement('div');
+      empty.className = 'day-empty';
+      empty.textContent = '這天還沒有待辦。從上面信件加入，或在下方新增。';
+      ticketListEl.appendChild(empty);
+      return;
+    }
+    list.forEach(function(t){
+      ticketListEl.appendChild(buildTicketRow(t, state.activeWeekDay, function(){ renderDayTabs(); renderTickets(); renderCalendar(); }));
+    });
+  }
+
+  var newTaskInput = document.getElementById('newTaskInput');
+  document.getElementById('addTaskBtn').addEventListener('click', submitNewWeekTask);
+  newTaskInput.addEventListener('keydown', function(e){ if(e.key==='Enter') submitNewWeekTask(); });
+  function submitNewWeekTask(){
+    var v = newTaskInput.value.trim();
+    if(!v) return;
+    addTask(state.activeWeekDay, v, 'plain');
+    newTaskInput.value = '';
+    newTaskInput.focus();
+    renderDayTabs(); renderTickets(); renderCalendar();
+  }
+
+  // ---------- Monthly calendar ----------
+  var calHeadRow = document.getElementById('calHeadRow');
+  var calGrid = document.getElementById('calGrid');
+  var calAgendaLabel = document.getElementById('calAgendaLabel');
+  var monthTicketList = document.getElementById('monthTicketList');
+
+  document.getElementById('monthTitle').textContent = (today.getFullYear()) + ' 年 ' + (today.getMonth()+1) + ' 月行事曆';
+  weekdayLabels.forEach(function(w){
+    var span = document.createElement('span');
+    span.textContent = '週' + w;
+    calHeadRow.appendChild(span);
+  });
+
+  function renderCalendar(){
+    calGrid.innerHTML = '';
+    var year = today.getFullYear(), month = today.getMonth();
+    var firstOfMonth = new Date(year, month, 1);
+    var lastDay = endOfMonth(today).getDate();
+    var startIdx = (firstOfMonth.getDay()+6)%7; // 0 = Monday
+
+    for(var b=0;b<startIdx;b++){
+      var blank = document.createElement('div');
+      blank.className = 'cal-cell blank';
+      calGrid.appendChild(blank);
+    }
+
+    for(var day=1; day<=lastDay; day++){
+      var iso = year+'-'+pad(month+1)+'-'+pad(day);
+      var cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'cal-cell' + (iso===todayISO?' today':'') + (iso===state.selectedMonthDate?' selected':'');
+      var num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = day;
+      cell.appendChild(num);
+
+      var items = tasksFor(iso);
+      var chipWrap = document.createElement('div');
+      chipWrap.className = 'dot-row';
+      items.slice(0,2).forEach(function(t){
+        var chip = document.createElement('div');
+        chip.className = 'cal-chip ' + t.level;
+        chip.textContent = t.text;
+        chipWrap.appendChild(chip);
+        var dot = document.createElement('span');
+        dot.className = 'cal-dot ' + t.level;
+        chipWrap.appendChild(dot);
+      });
+      cell.appendChild(chipWrap);
+      if(items.length>2){
+        var more = document.createElement('div');
+        more.className = 'cal-more';
+        more.textContent = '+' + (items.length-2);
+        cell.appendChild(more);
+      }
+
+      (function(isoCopy){
+        cell.addEventListener('click', function(){
+          state.selectedMonthDate = isoCopy;
+          renderCalendar();
+          renderMonthAgenda();
+        });
+      })(iso);
+
+      calGrid.appendChild(cell);
+    }
+  }
+
+  function renderMonthAgenda(){
+    var d = new Date(state.selectedMonthDate + 'T00:00:00');
+    calAgendaLabel.innerHTML = '選定日期：<b>' + (d.getMonth()+1) + '月' + d.getDate() + '日</b>（週' + weekdayLabels[(d.getDay()+6)%7] + '）';
+    var list = tasksFor(state.selectedMonthDate);
+    monthTicketList.innerHTML = '';
+    if(list.length===0){
+      var empty = document.createElement('div');
+      empty.className = 'day-empty';
+      empty.textContent = '這天還沒有待辦。從分派台加入信件，或在下方新增。';
+      monthTicketList.appendChild(empty);
+      return;
+    }
+    list.forEach(function(t){
+      monthTicketList.appendChild(buildTicketRow(t, state.selectedMonthDate, function(){ renderCalendar(); renderMonthAgenda(); renderDayTabs(); renderTickets(); }));
+    });
+  }
+
+  var newMonthTaskInput = document.getElementById('newMonthTaskInput');
+  document.getElementById('addMonthTaskBtn').addEventListener('click', submitNewMonthTask);
+  newMonthTaskInput.addEventListener('keydown', function(e){ if(e.key==='Enter') submitNewMonthTask(); });
+  function submitNewMonthTask(){
+    var v = newMonthTaskInput.value.trim();
+    if(!v) return;
+    addTask(state.selectedMonthDate, v, 'plain');
+    newMonthTaskInput.value = '';
+    newMonthTaskInput.focus();
+    renderCalendar(); renderMonthAgenda(); renderDayTabs(); renderTickets();
+  }
+
+  // ---------- Init ----------
+  renderDayTabs();
+  renderTickets();
+  renderCalendar();
+  renderMonthAgenda();
+  if(state.connected){
+    connectBtn.textContent = '已同步 · 範例信箱（30）';
+    connectBtn.setAttribute('data-state','connected');
+    deskSub.innerHTML = '已同步 <b>30</b> 封信・<b>2</b> 緊急・<b>1</b> 次緊急・<b>27</b> 可以晚點';
+    emptyState.style.display = 'none';
+    binsEl.classList.add('active');
+    gongwenBox.style.display = 'block';
+    renderBins();
+  }
+})();
+</script>
+</body>
+</html>
